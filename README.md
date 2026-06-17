@@ -1,10 +1,10 @@
 # ♡ payments-tracker ♡
 
-A soft, pastel finance tracker for monthly payments — sync across your laptop, phone, and tablet, secured by a personal password.
+A soft, pastel finance tracker for monthly payments. Sync across your laptop, phone, and tablet, secured by a personal password.
 
 Built as a single HTML file. No build step, no install, no fuss.
 
-## ✨ Features
+## Features
 
 - Track payments to multiple payees, each with multiple items
 - Per-owner totals (Primary / Secondary / Combined) per month
@@ -14,13 +14,13 @@ Built as a single HTML file. No build step, no install, no fuss.
 - Password-locked: your data lives at a SHA-256 hashed path, unreachable without it
 - Anonymous Firebase auth — no email, no account, no tracking
 
-## 🌸 Try it
+## Try it
 
 **Blank template:** [open the live demo →](https://camachoj-ds-exp.github.io/t/payments-blank.html)
 
 Set it up with your own Firebase project and password in about 5 minutes. Your data stays in *your* Firebase, completely separate from anyone else's.
 
-## 🛠 Setup (one-time per person)
+## Setup (one-time per person)
 
 1. Open the blank template link above
 2. Create a free [Firebase project](https://console.firebase.google.com) → add a Web App → enable **Realtime Database** (start in test mode) → enable **Anonymous Authentication**
