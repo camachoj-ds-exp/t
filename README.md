@@ -41,11 +41,11 @@ Set it up with your own Firebase project and password in about 5 minutes. Your d
    }
    ```
 
-## 🎨 Theme
+## Theme
 
 Soft cream, baby pink, baby blue, lilac. Designed to feel calm — money shouldn't feel stressful.
 
-## 🔒 What's actually in this repo
+## What's actually in this repo
 
 The HTML is just the interface. None of the following are stored here:
 
