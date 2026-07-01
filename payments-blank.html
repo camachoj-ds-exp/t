@@ -258,6 +258,57 @@
     background:linear-gradient(90deg,#ffb3c6,#ffd6a5,#fff3b0,#b6e3c6,#a9d3ff,#e3d4ff);
   }
   .hint{font-size:12px;color:var(--ink-soft);margin-top:8px}
+
+  /* Summary receipt modal */
+  #summaryModal .card{max-width:640px;max-height:90vh;display:flex;flex-direction:column}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .filter{
+    padding:6px 12px;border-radius:999px;border:1px solid var(--border);
+    background:#fff;cursor:pointer;font-size:12px;font-family:inherit;color:var(--ink);
+  }
+  .filter:hover{background:var(--cream-2)}
+  .filter.active{background:var(--pink);border-color:var(--pink-deep);font-weight:700;color:#9b3a5c}
+  .receipt{
+    background:linear-gradient(180deg,#fffdf7,#fff);
+    padding:18px 20px;border-radius:14px;border:1px dashed var(--border);
+    overflow:auto;flex:1;min-height:200px;
+    color:var(--ink);line-height:1.6;font-size:13px;
+  }
+  .receipt .rtitle{text-align:center;font-weight:700;color:var(--pink-deep);margin-bottom:4px;font-size:15px;letter-spacing:.4px}
+  .receipt .rmeta{text-align:center;font-size:11px;color:var(--ink-soft);margin-bottom:14px}
+  .receipt .rmeta em{color:var(--pink-deep);font-style:normal;font-weight:700}
+  .receipt .mblock{margin-bottom:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .receipt .mblock .mtitle{
+    padding:8px 12px;background:linear-gradient(90deg,var(--cream-2),#fff);
+    font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .receipt .mblock.paid .mtitle{background:linear-gradient(90deg,var(--mint),#fff)}
+  .receipt .mblock .badge-p{font-size:10px;padding:2px 8px;border-radius:999px;background:var(--mint);color:#2e7a52;border:1px solid #b6e3c6;font-weight:700}
+  .receipt .mblock .mbody{padding:10px 12px}
+  .receipt .part{margin-bottom:10px}
+  .receipt .part .pname{font-weight:700;color:var(--ink);margin-bottom:2px;font-size:12px}
+  .receipt .row{display:flex;justify-content:space-between;gap:12px;padding:2px 0;font-size:12px}
+  .receipt .row.item{padding-left:12px;color:var(--ink-soft)}
+  .receipt .row.item .who{font-size:10px;padding:1px 6px;border-radius:999px;background:var(--cream-2);margin-left:6px}
+  .receipt .row.sub{border-top:1px dashed var(--border);padding-top:3px;margin-top:3px;font-weight:600;padding-left:12px}
+  .receipt .row.owner{color:var(--ink-soft);font-size:12px}
+  .receipt .row.mtotal{border-top:1.5px solid var(--ink);padding-top:5px;margin-top:5px;font-weight:700}
+  .receipt .grand{
+    background:linear-gradient(135deg,var(--lemon),var(--mint));
+    padding:12px 14px;border-radius:10px;margin-top:12px;
+  }
+  .receipt .grand .row{font-weight:600}
+  .receipt .grand .row.total{font-weight:700;font-size:14px;border-top:2px solid var(--ink);padding-top:6px;margin-top:4px}
+  .receipt .rfoot{text-align:center;color:var(--pink-deep);margin-top:14px;font-size:12px;font-weight:700;letter-spacing:.4px}
+
+  /* Print: strip everything except the receipt */
+  @media print {
+    body > *{display:none !important}
+    body > #summaryModal{display:block !important;position:static !important;background:none !important;padding:0 !important;inset:auto !important}
+    #summaryModal .card{box-shadow:none;border:none;max-width:none;padding:0}
+    #summaryModal h3, #summaryModal p, #summaryModal .filters, #summaryModal .actions{display:none !important}
+    #summaryModal .receipt{border:none;background:none;padding:0;overflow:visible;max-height:none}
+  }
   .danger{color:#b8556b;background:#fff;border-color:#f3c4d0}
 </style>
 </head>
@@ -279,7 +330,8 @@
   <h3>Monthly blocks</h3>
   <div id="monthsList"></div>
   <h3 style="margin-top:18px">Actions</h3>
-  <button class="btn" id="exportBtn">⬇ Export JSON</button>
+  <button class="btn pink" id="summaryBtn">📄 Summary / Receipt</button>
+  <button class="btn" id="exportBtn" style="margin-top:6px">⬇ Export JSON</button>
   <button class="btn" id="importBtn" style="margin-top:6px">⬆ Import JSON</button>
   <input type="file" id="importFile" accept="application/json" style="display:none">
   <button class="btn danger" id="resetBtn" style="margin-top:6px">↺ Reset to defaults</button>
@@ -334,6 +386,26 @@
   </div>
 </div>
 
+<!-- Summary receipt modal -->
+<div class="modal" id="summaryModal">
+  <div class="card">
+    <h3>♡ Payments Summary ♡</h3>
+    <p>A tidy receipt of your monthly payments. Filter by owner, then download or print.</p>
+    <div class="filters" id="summaryFilters">
+      <button class="filter active" data-filter="all">All owners</button>
+      <button class="filter" data-filter="Primary">Primary</button>
+      <button class="filter" data-filter="Secondary">Secondary</button>
+      <button class="filter" data-filter="Combined">Combined</button>
+    </div>
+    <div class="receipt" id="summaryReceipt"></div>
+    <div class="actions">
+      <button class="btn ghost" id="summaryClose">Close</button>
+      <button class="btn" id="summaryDownloadTxt">⬇ Download .txt</button>
+      <button class="btn pink" id="summaryPrint">🖨 Print / Save PDF</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 // =========================
 // State & defaults
@@ -353,7 +425,7 @@ function currentYM(){
 function defaultData(){
   return {
     entities: [
-      { id:crypto.randomUUID(), name:"My first entity", items:[
+      { id:crypto.randomUUID(), name:"My first particular", items:[
         { id:crypto.randomUUID(), name:"My first item", owner:"Primary", monthly:0, term:currentYM(), notes:"" },
       ]},
     ],
@@ -581,14 +653,14 @@ function renderMonths(){
       eCard.innerHTML = `
         <div class="ehead">
           <input class="name ename" data-eid="${g.entity.id}" value="${escapeAttr(g.entity.name)}">
-          <span class="etot">Entity total / month: <b>${PESO(eTot)}</b></span>
+          <span class="etot">Particular total / month: <b>${PESO(eTot)}</b></span>
           <button class="btn" data-act="addItem" data-eid="${g.entity.id}">+ Item</button>
-          <button class="btn ghost" data-act="delEntity" data-eid="${g.entity.id}" title="Remove entity">✕</button>
+          <button class="btn ghost" data-act="delEntity" data-eid="${g.entity.id}" title="Remove particular">✕</button>
         </div>
         <div class="tablewrap">
           <table>
             <thead><tr>
-              <th>Entity / Item</th><th>Owner</th><th>Monthly</th><th>Term</th><th>Remaining Total</th><th>Notes</th><th></th>
+              <th>Particular / Item</th><th>Owner</th><th>Monthly</th><th>Term</th><th>Remaining Total</th><th>Notes</th><th></th>
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
@@ -610,7 +682,7 @@ function renderMonths(){
     const actions = document.createElement("div");
     actions.className = "month-actions";
     actions.innerHTML = `
-      <button class="btn blue" data-act="addEntity" data-k="${M.key}">+ Add entity (applies to all months)</button>`;
+      <button class="btn blue" data-act="addEntity" data-k="${M.key}">+ Add particular (applies to all months)</button>`;
     body.appendChild(actions);
 
     div.appendChild(body);
@@ -723,7 +795,7 @@ document.addEventListener("click",(e)=>{
     ent.items = ent.items.filter(i=>i.id!==iid);
     persist(); render();
   } else if(act==="addEntity"){
-    const name = prompt("New entity name:", `Entity ${DATA.entities.length+1}`);
+    const name = prompt("New particular name:", `Particular ${DATA.entities.length+1}`);
     if(!name) return;
     DATA.entities.push({ id:crypto.randomUUID(), name, items:[] });
     persist(); render();
@@ -731,7 +803,7 @@ document.addEventListener("click",(e)=>{
     const eid = btn.dataset.eid;
     const ent = DATA.entities.find(x=>x.id===eid);
     if(!ent) return;
-    if(!confirm(`Remove entity "${ent.name}" and all its items from every month?`)) return;
+    if(!confirm(`Remove particular "${ent.name}" and all its items from every month?`)) return;
     DATA.entities = DATA.entities.filter(x=>x.id!==eid);
     persist(); render();
   }
@@ -827,6 +899,181 @@ document.getElementById("fbSave").onclick = ()=>{
   fbModal.classList.remove("show");
   location.reload();
 };
+
+// =========================
+// Summary receipt
+// =========================
+function buildSummary(ownerFilter){
+  const months = monthsToRender();
+  const out = {
+    generatedAt: new Date(),
+    ownerFilter,
+    months: [],
+    grandTotals: { Primary:0, Secondary:0, Combined:0 },
+  };
+  for(const M of months){
+    const groups = itemsActiveIn(M.y, M.m);
+    const monthEntry = {
+      key: M.key, label: M.label, paid: !!DATA.paidMonths[M.key],
+      particulars: [],
+      ownerTotals: { Primary:0, Secondary:0, Combined:0 },
+      total: 0,
+    };
+    for(const g of groups){
+      const filtered = g.items.filter(it => ownerFilter==="all" || (it.owner||"Primary")===ownerFilter);
+      if(filtered.length===0) continue;
+      const p = {
+        name: g.entity.name,
+        items: filtered.map(it=>({name:it.name||"(unnamed)", owner:it.owner||"Primary", monthly:+it.monthly||0})),
+      };
+      p.subtotal = p.items.reduce((s,it)=>s+it.monthly,0);
+      monthEntry.particulars.push(p);
+      for(const it of p.items){
+        monthEntry.ownerTotals[it.owner] += it.monthly;
+        monthEntry.total += it.monthly;
+        out.grandTotals[it.owner] += it.monthly;
+      }
+    }
+    if(monthEntry.particulars.length>0) out.months.push(monthEntry);
+  }
+  return out;
+}
+
+function renderSummaryHTML(s){
+  const filterLabel = s.ownerFilter==="all" ? "All owners" : `${s.ownerFilter} only`;
+  const dt = s.generatedAt.toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"});
+  let html = `
+    <div class="rtitle">♡ Payments Summary ♡</div>
+    <div class="rmeta">Generated ${dt} · Filter: <em>${filterLabel}</em></div>
+  `;
+  if(s.months.length===0){
+    html += `<div style="text-align:center;color:var(--ink-soft);padding:20px">No matching items to summarize.</div>`;
+  }
+  for(const M of s.months){
+    html += `<div class="mblock${M.paid?" paid":""}">
+      <div class="mtitle">
+        <span>📅 ${M.label}</span>
+        ${M.paid?`<span class="badge-p">✓ PAID</span>`:``}
+      </div>
+      <div class="mbody">`;
+    for(const p of M.particulars){
+      html += `<div class="part">
+        <div class="pname">${escapeAttr(p.name)}</div>`;
+      for(const it of p.items){
+        html += `<div class="row item"><span>${escapeAttr(it.name)}<span class="who">${it.owner}</span></span><span>${PESO(it.monthly)}</span></div>`;
+      }
+      html += `<div class="row sub"><span>Subtotal</span><span>${PESO(p.subtotal)}</span></div>
+      </div>`;
+    }
+    if(s.ownerFilter==="all"){
+      html += `<div class="row owner"><span>Primary</span><span>${PESO(M.ownerTotals.Primary)}</span></div>
+        <div class="row owner"><span>Secondary</span><span>${PESO(M.ownerTotals.Secondary)}</span></div>
+        <div class="row owner"><span>Combined</span><span>${PESO(M.ownerTotals.Combined)}</span></div>`;
+    }
+    html += `<div class="row mtotal"><span>Month total</span><span>${PESO(M.total)}</span></div>
+      </div></div>`;
+  }
+  const grand = s.grandTotals.Primary + s.grandTotals.Secondary + s.grandTotals.Combined;
+  html += `<div class="grand">
+    <div class="rtitle" style="color:var(--ink)">Grand Totals (all months)</div>`;
+  if(s.ownerFilter==="all"){
+    html += `<div class="row"><span>Primary</span><span>${PESO(s.grandTotals.Primary)}</span></div>
+      <div class="row"><span>Secondary</span><span>${PESO(s.grandTotals.Secondary)}</span></div>
+      <div class="row"><span>Combined</span><span>${PESO(s.grandTotals.Combined)}</span></div>`;
+  }
+  html += `<div class="row total"><span>Grand Total</span><span>${PESO(grand)}</span></div>
+    </div>
+    <div class="rfoot">♡ End of receipt ♡</div>`;
+  return html;
+}
+
+function renderSummaryText(s){
+  const bar = "═".repeat(52);
+  const sep = "─".repeat(52);
+  const filterLabel = s.ownerFilter==="all" ? "All owners" : `${s.ownerFilter} only`;
+  const dt = s.generatedAt.toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"});
+  const pad = (l, r, w=52)=> l + " ".repeat(Math.max(1, w-l.length-r.length)) + r;
+  const lines = [];
+  lines.push(bar);
+  lines.push("           ♡ PAYMENTS SUMMARY ♡");
+  lines.push(`         Generated: ${dt}`);
+  lines.push(`         Filter: ${filterLabel}`);
+  lines.push(bar);
+  lines.push("");
+  if(s.months.length===0){
+    lines.push("  No matching items to summarize.");
+    lines.push("");
+  }
+  for(const M of s.months){
+    lines.push(`📅 ${M.label.toUpperCase()}${M.paid?"   ✓ PAID":""}`);
+    lines.push(sep);
+    for(const p of M.particulars){
+      lines.push(`  ${p.name}`);
+      for(const it of p.items){
+        lines.push(pad(`    ${it.name} (${it.owner})`, PESO(it.monthly)));
+      }
+      lines.push(pad(`    Subtotal`, PESO(p.subtotal)));
+      lines.push("");
+    }
+    if(s.ownerFilter==="all"){
+      lines.push(pad("  Primary", PESO(M.ownerTotals.Primary)));
+      lines.push(pad("  Secondary", PESO(M.ownerTotals.Secondary)));
+      lines.push(pad("  Combined", PESO(M.ownerTotals.Combined)));
+    }
+    lines.push(pad("  MONTH TOTAL", PESO(M.total)));
+    lines.push("");
+  }
+  lines.push(bar);
+  lines.push("  GRAND TOTALS (all months)");
+  lines.push(sep);
+  if(s.ownerFilter==="all"){
+    lines.push(pad("  Primary", PESO(s.grandTotals.Primary)));
+    lines.push(pad("  Secondary", PESO(s.grandTotals.Secondary)));
+    lines.push(pad("  Combined", PESO(s.grandTotals.Combined)));
+  }
+  const grand = s.grandTotals.Primary + s.grandTotals.Secondary + s.grandTotals.Combined;
+  lines.push(pad("  GRAND TOTAL", PESO(grand)));
+  lines.push(bar);
+  lines.push("           ♡ End of receipt ♡");
+  lines.push(bar);
+  return lines.join("\n");
+}
+
+let currentSummaryFilter = "all";
+const summaryModal = document.getElementById("summaryModal");
+function openSummary(){
+  currentSummaryFilter = "all";
+  document.querySelectorAll("#summaryFilters .filter").forEach(f=>{
+    f.classList.toggle("active", f.dataset.filter==="all");
+  });
+  refreshSummary();
+  summaryModal.classList.add("show");
+  closeDrawer();
+}
+function refreshSummary(){
+  const s = buildSummary(currentSummaryFilter);
+  document.getElementById("summaryReceipt").innerHTML = renderSummaryHTML(s);
+}
+document.getElementById("summaryBtn").onclick = openSummary;
+document.getElementById("summaryClose").onclick = ()=> summaryModal.classList.remove("show");
+document.getElementById("summaryFilters").addEventListener("click",(e)=>{
+  const f = e.target.closest(".filter");
+  if(!f) return;
+  currentSummaryFilter = f.dataset.filter;
+  document.querySelectorAll("#summaryFilters .filter").forEach(x=> x.classList.toggle("active", x===f));
+  refreshSummary();
+});
+document.getElementById("summaryDownloadTxt").onclick = ()=>{
+  const s = buildSummary(currentSummaryFilter);
+  const txt = renderSummaryText(s);
+  const blob = new Blob([txt],{type:"text/plain;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const tag = currentSummaryFilter==="all" ? "all" : currentSummaryFilter.toLowerCase();
+  a.download = `payments-summary-${tag}-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+};
+document.getElementById("summaryPrint").onclick = ()=> window.print();
 
 // Initial render + sync
 render();
